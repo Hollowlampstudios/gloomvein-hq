@@ -1,7 +1,7 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm';
-import { SUPABASE_URL, SUPABASE_KEY } from './config.js?v=d815bac3-1795441543';
-import { todayStrip, platformCards, postsTable, accountsSection, manualList, manualPosts, totalsStrip } from './render.js?v=d815bac3-1795441543';
-import { trendSnapshots, parseDuration, formatDuration, parseMultiplier, formatMultiplier } from './lib.js?v=d815bac3-1795441543';
+import { SUPABASE_URL, SUPABASE_KEY } from './config.js?v=1e4fcb52-1795445158';
+import { todayStrip, platformCards, postsTable, accountsSection, manualList, manualPosts, totalsStrip } from './render.js?v=1e4fcb52-1795445158';
+import { trendSnapshots, parseDuration, formatDuration, parseMultiplier, formatMultiplier } from './lib.js?v=1e4fcb52-1795445158';
 
 // Implicit flow: the link works even when it is opened on a different device from the one that asked for it.
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
