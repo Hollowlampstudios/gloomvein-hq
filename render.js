@@ -69,9 +69,22 @@ export function platformCards(snapshots, statuses, now) {
 
 const PLATFORM_LABEL = { youtube: 'YT', tiktok: 'TikTok', instagram: 'IG', facebook: 'FB', bluesky: 'Bsky', reddit: 'Reddit' };
 
+const platformLabel = (platform) =>
+  PLATFORM_LABEL[platform] ?? (platform?.startsWith('fb-group:') ? `FB group ${platform.slice(9)}` : platform);
+
+export const manualPosts = (posts) => posts.filter((p) => p.origin === 'manual');
+
+// The hand-entered posts under the form; buttons carry the index into manualPosts(posts).
+export function manualList(posts) {
+  const rows = manualPosts(posts).map((p, i) => `<li><span><b>${escapeHtml(platformLabel(p.platform))}</b>
+${escapeHtml(p.caption || p.post_id)} <small>${escapeHtml(fmt(p.views))} views · ${escapeHtml(fmt(p.likes))} likes · ${escapeHtml(fmt(p.comments))} comments</small></span>
+<span class="acts"><button type="button" data-edit="${i}">Edit</button><button type="button" data-delete="${i}">Delete</button></span></li>`);
+  return rows.length ? `<ul class="manual-list">${rows.join('')}</ul>` : '<p class="note">No numbers added by hand yet.</p>';
+}
+
 export function postsTable(posts, sortKey) {
   const rows = sortPosts(posts, sortKey).map((p) => {
-    const label = PLATFORM_LABEL[p.platform] ?? (p.platform?.startsWith('fb-group:') ? `FB group ${p.platform.slice(9)}` : p.platform);
+    const label = platformLabel(p.platform);
     const when = p.posted_at ? formatSast(p.posted_at).split(' ').slice(0, 2).join(' ') : '';
     const caption = (p.caption ?? '').replace(/\s+/g, ' ');
     const short = caption.length > 90 ? caption.slice(0, 89) + '…' : caption;

@@ -1,6 +1,6 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm';
 import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
-import { todayStrip, platformCards, postsTable, accountsSection } from './render.js';
+import { todayStrip, platformCards, postsTable, accountsSection, manualList, manualPosts } from './render.js';
 import { trendSnapshots } from './lib.js';
 
 // Implicit flow: the link works even when it is opened on a different device from the one that asked for it.
@@ -47,6 +47,7 @@ function render() {
   $('today').innerHTML = todayStrip(data.snapshots, data.kofi, now);
   $('platforms').innerHTML = platformCards(data.snapshots, data.statuses, now);
   renderPosts();
+  $('m-list').innerHTML = manualList(data.posts);
   $('accounts').innerHTML = accountsSection(data.accounts);
   filterAccounts();
   $('updated').textContent = `Loaded ${now.toLocaleString('en-GB', { timeZone: 'Africa/Johannesburg' })}. The data itself updates every hour.`;
@@ -61,6 +62,15 @@ function filterAccounts() {
   const q = $('search').value.trim().toLowerCase();
   for (const a of document.querySelectorAll('.acct')) a.hidden = q !== '' && !a.dataset.search.includes(q);
   for (const g of document.querySelectorAll('.acct-group')) g.hidden = ![...g.querySelectorAll('.acct')].some((a) => !a.hidden);
+}
+
+let editing = null; // the {platform, post_id} being edited, so a changed link replaces the old entry
+
+const MANUAL_FIELDS = ['m-url', 'm-caption', 'm-date', 'm-views', 'm-likes', 'm-comments'];
+function clearManual() {
+  for (const id of MANUAL_FIELDS) $(id).value = ''; // "where" and the group name stay for the next post
+  editing = null;
+  $('m-save').textContent = 'Save';
 }
 
 async function saveManual(e) {
@@ -79,8 +89,43 @@ async function saveManual(e) {
     origin: 'manual', updated_at: new Date().toISOString(),
   };
   const { error } = await sb.from('posts').upsert(row, { onConflict: 'platform,post_id' });
-  $('m-msg').textContent = error ? `Not saved: ${error.message}` : 'Saved.';
-  if (!error) load();
+  if (error) { $('m-msg').textContent = `Not saved: ${error.message}`; return; }
+  if (editing && (editing.platform !== row.platform || editing.post_id !== row.post_id)) {
+    await sb.from('posts').delete().match({ platform: editing.platform, post_id: editing.post_id, origin: 'manual' });
+  }
+  $('m-msg').textContent = `Saved "${row.caption ?? row.url}". It is in "Your entries" below and in the Posts list. Add the next one.`;
+  clearManual();
+  load();
+}
+
+function editManual(p) {
+  const group = p.platform.startsWith('fb-group:');
+  $('m-where').value = group ? 'fb-group' : 'reddit';
+  $('m-group-label').hidden = !group;
+  $('m-group').value = group ? p.platform.slice(9) : '';
+  $('m-url').value = p.post_id;
+  $('m-caption').value = p.caption ?? '';
+  $('m-date').value = p.posted_at ? new Date(Date.parse(p.posted_at) + 2 * 3600e3).toISOString().slice(0, 10) : '';
+  $('m-views').value = p.views ?? '';
+  $('m-likes').value = p.likes ?? '';
+  $('m-comments').value = p.comments ?? '';
+  editing = { platform: p.platform, post_id: p.post_id };
+  $('m-save').textContent = 'Save changes';
+  $('m-msg').textContent = 'Editing: change the numbers and save.';
+  $('m-url').scrollIntoView({ block: 'center' });
+}
+
+async function onManualList(e) {
+  const b = e.target.closest('button');
+  if (!b) return;
+  const p = manualPosts(data.posts)[Number(b.dataset.edit ?? b.dataset.delete)];
+  if (!p) return;
+  if (b.dataset.edit !== undefined) return editManual(p);
+  if (!confirm(`Delete "${p.caption ?? p.post_id}"?`)) return;
+  const { error } = await sb.from('posts').delete().match({ platform: p.platform, post_id: p.post_id, origin: 'manual' });
+  $('m-msg').textContent = error ? `Not deleted: ${error.message}` : 'Deleted.';
+  if (editing?.post_id === p.post_id) clearManual();
+  load();
 }
 
 function showLogin() {
@@ -108,6 +153,7 @@ $('login-form').addEventListener('submit', async (e) => {
 $('signout').addEventListener('click', () => sb.auth.signOut());
 $('search').addEventListener('input', filterAccounts);
 $('manual').addEventListener('submit', saveManual);
+$('m-list').addEventListener('click', onManualList);
 $('m-where').addEventListener('change', () => { $('m-group-label').hidden = $('m-where').value !== 'fb-group'; });
 for (const b of document.querySelectorAll('[data-sort]')) b.addEventListener('click', () => { sortKey = b.dataset.sort; renderPosts(); });
 document.addEventListener('visibilitychange', () => { if (!document.hidden && !$('app').hidden) load(); });

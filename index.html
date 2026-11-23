@@ -41,7 +41,8 @@
   <div id="posts" class="scroll"></div>
 
   <details class="panel">
-    <summary>Add numbers for a Reddit or Facebook group post</summary>
+    <summary>Add numbers for Reddit or Facebook group posts</summary>
+    <p class="note">For places the dashboard can't read by itself. Your Facebook Page, Instagram, TikTok, YouTube and Bluesky posts come in on their own.</p>
     <form id="manual">
       <label>Where
         <select id="m-where"><option value="reddit">Reddit</option><option value="fb-group">Facebook group</option></select>
@@ -55,9 +56,11 @@
         <label>Likes <input id="m-likes" type="number" min="0"></label>
         <label>Comments <input id="m-comments" type="number" min="0"></label>
       </div>
-      <button type="submit">Save</button>
-      <p id="m-msg" class="note"></p>
+      <button type="submit" id="m-save">Save</button>
+      <p id="m-msg" class="note" aria-live="polite"></p>
     </form>
+    <h3 class="sub">Your entries</h3>
+    <div id="m-list"></div>
   </details>
 
   <h2>Accounts</h2>
