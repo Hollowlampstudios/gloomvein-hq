@@ -1,6 +1,7 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm';
 import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
 import { todayStrip, platformCards, postsTable, accountsSection } from './render.js';
+import { trendSnapshots } from './lib.js';
 
 // Implicit flow: the link works even when it is opened on a different device from the one that asked for it.
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
@@ -14,21 +15,21 @@ let data = { snapshots: [], posts: [], statuses: [], accounts: [], kofi: [] };
 let sortKey = 'newest';
 
 async function load() {
-  const since = new Date(Date.now() - 15 * 24 * 3600e3).toISOString();
-  const [snapshots, posts, statuses, accounts, kofi] = await Promise.all([
-    sb.from('snapshots').select('source,metric,value,taken_at').gte('taken_at', since).order('taken_at', { ascending: false }).limit(5000),
+  // The view does the week maths in the database: raw snapshots would be cut at 1000 rows (about 3.5 days).
+  const [trends, posts, statuses, accounts, kofi] = await Promise.all([
+    sb.from('metric_trends').select('*'),
     sb.from('posts').select('*').order('posted_at', { ascending: false, nullsFirst: false }).limit(200),
     sb.from('source_status').select('*'),
     sb.from('accounts').select('*'),
     sb.from('kofi').select('amount,currency,at'),
   ]);
-  const failed = [snapshots, posts, statuses, accounts, kofi].find((r) => r.error);
+  const failed = [trends, posts, statuses, accounts, kofi].find((r) => r.error);
   if (failed) {
     showProblem(failed.error.message);
     return;
   }
   $('problem').hidden = true;
-  data = { snapshots: snapshots.data, posts: posts.data, statuses: statuses.data, accounts: accounts.data, kofi: kofi.data };
+  data = { snapshots: trendSnapshots(trends.data), posts: posts.data, statuses: statuses.data, accounts: accounts.data, kofi: kofi.data };
   render();
 }
 

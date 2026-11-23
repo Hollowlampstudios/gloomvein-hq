@@ -24,7 +24,7 @@ const PLATFORMS = [
 // A card can be fed by its own source or by the daily Metricool run: use the first one that is set up.
 function statusFor(names, statuses) {
   const found = names.map((n) => statuses.find((s) => s.source === n)).filter(Boolean);
-  return found.find((s) => s.state !== 'not_set_up') ?? found[0];
+  return found.find((s) => s.state === 'ok') ?? found.find((s) => s.state !== 'not_set_up') ?? found[0];
 }
 
 function stat(label, value, delta) {
@@ -63,7 +63,7 @@ export function platformCards(snapshots, statuses, now) {
       return stat(label, t.current, t.delta);
     }).join('');
     return `<article class="card${note ? ' stale' : ''}"><h3>${escapeHtml(p.name)}</h3>
-<div class="stats">${stats}</div>${note ? `<p class="note">${escapeHtml(note)}</p>` : ''}</article>`;
+<div class="stats">${stats}</div>${note ? `<p class="note"${status?.state === 'error' && status.last_error ? ` title="${escapeHtml(status.last_error)}"` : ''}>${escapeHtml(note)}</p>` : ''}</article>`;
   }).join('\n');
 }
 

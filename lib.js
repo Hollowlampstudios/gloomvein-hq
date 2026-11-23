@@ -43,6 +43,7 @@ export function formatSast(iso) {
 export function staleText(status, now, maxAgeMs = STALE_MS) {
   if (!status || status.state === 'not_set_up') return 'not set up';
   if (!status.last_ok) return status.state === 'error' ? 'not working yet' : '';
+  if (status.state === 'error') return status.last_error_at ? `error since ${formatSast(status.last_error_at)}` : 'error';
   if (now.getTime() - Date.parse(status.last_ok) > maxAgeMs) return `stale since ${formatSast(status.last_ok)}`;
   return '';
 }
@@ -70,4 +71,12 @@ export function groupAccounts(accounts) {
 
 export function daysToLaunch(now) {
   return Math.max(0, Math.ceil((LAUNCH - now.getTime()) / DAY_MS));
+}
+
+// Rows of the metric_trends view -> the latest and week-old snapshots per metric, for latest() and weekTrend().
+export function trendSnapshots(rows) {
+  return rows.flatMap((r) => [
+    { source: r.source, metric: r.metric, value: r.current, taken_at: r.taken_at },
+    ...(r.previous == null ? [] : [{ source: r.source, metric: r.metric, value: r.previous, taken_at: r.previous_at }]),
+  ]);
 }
