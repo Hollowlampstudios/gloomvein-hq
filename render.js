@@ -118,3 +118,21 @@ export function accountsSection(accounts) {
 <strong>${escapeHtml(a.name)}${badge}</strong><span>${escapeHtml(a.purpose ?? '')}</span><small>${escapeHtml(a.login ?? '')}</small></a>`;
   }).join('\n')}</div></section>`).join('\n');
 }
+
+// "All posts": every platform added up (API, Metricool and hand-entered), plus views per platform.
+export function totalsStrip(rows) {
+  const sum = (k) => rows.reduce((t, r) => t + Number(r[k] || 0), 0);
+  const byPlace = {};
+  for (const r of rows) {
+    const place = r.platform?.startsWith('fb-group:') ? 'FB groups' : platformLabel(r.platform);
+    byPlace[place] = (byPlace[place] ?? 0) + Number(r.views || 0);
+  }
+  const breakdown = Object.entries(byPlace).sort((a, b) => b[1] - a[1]).map(([p, v]) => `${p} ${fmt(v)}`).join(' · ');
+  return `<div class="strip">
+${stat('posts', sum('posts'))}
+${stat('views', sum('views'))}
+${stat('likes', sum('likes'))}
+${stat('comments', sum('comments'))}
+${stat('reposts / shares', sum('shares'))}
+</div>${breakdown ? `<p class="note">Views by place: ${escapeHtml(breakdown)}</p>` : ''}`;
+}

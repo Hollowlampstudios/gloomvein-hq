@@ -1,6 +1,6 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm';
 import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
-import { todayStrip, platformCards, postsTable, accountsSection, manualList, manualPosts } from './render.js';
+import { todayStrip, platformCards, postsTable, accountsSection, manualList, manualPosts, totalsStrip } from './render.js';
 import { trendSnapshots, parseDuration, formatDuration, parseMultiplier, formatMultiplier } from './lib.js';
 
 // Implicit flow: the link works even when it is opened on a different device from the one that asked for it.
@@ -11,25 +11,26 @@ const $ = (id) => document.getElementById(id);
 const PAGE_URL = location.origin + location.pathname;
 const PROJECT_LINK = 'https://supabase.com/dashboard/project/lrbrvcucomiygzbmvlwx';
 
-let data = { snapshots: [], posts: [], statuses: [], accounts: [], kofi: [] };
+let data = { snapshots: [], posts: [], statuses: [], accounts: [], kofi: [], totals: [] };
 let sortKey = 'newest';
 
 async function load() {
   // The view does the week maths in the database: raw snapshots would be cut at 1000 rows (about 3.5 days).
-  const [trends, posts, statuses, accounts, kofi] = await Promise.all([
+  const [trends, posts, statuses, accounts, kofi, totals] = await Promise.all([
     sb.from('metric_trends').select('*'),
     sb.from('posts').select('*').order('posted_at', { ascending: false, nullsFirst: false }).limit(200),
     sb.from('source_status').select('*'),
     sb.from('accounts').select('*'),
     sb.from('kofi').select('amount,currency,at'),
+    sb.from('post_totals').select('*'),
   ]);
-  const failed = [trends, posts, statuses, accounts, kofi].find((r) => r.error);
+  const failed = [trends, posts, statuses, accounts, kofi, totals].find((r) => r.error);
   if (failed) {
     showProblem(failed.error.message);
     return;
   }
   $('problem').hidden = true;
-  data = { snapshots: trendSnapshots(trends.data), posts: posts.data, statuses: statuses.data, accounts: accounts.data, kofi: kofi.data };
+  data = { snapshots: trendSnapshots(trends.data), posts: posts.data, statuses: statuses.data, accounts: accounts.data, kofi: kofi.data, totals: totals.data };
   render();
 }
 
@@ -45,6 +46,7 @@ function showProblem(message) {
 function render() {
   const now = new Date();
   $('today').innerHTML = todayStrip(data.snapshots, data.kofi, now);
+  $('totals').innerHTML = totalsStrip(data.totals);
   $('platforms').innerHTML = platformCards(data.snapshots, data.statuses, now);
   renderPosts();
   $('m-list').innerHTML = manualList(data.posts);
