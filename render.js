@@ -1,5 +1,5 @@
 // Builds the page's HTML strings. No Supabase calls, no DOM: every text value goes through escapeHtml.
-import { latest, weekTrend, formatDelta, formatSast, staleText, sortPosts, groupAccounts, daysToLaunch } from './lib.js';
+import { latest, weekTrend, formatDelta, formatSast, staleText, sortPosts, groupAccounts, daysToLaunch, formatDuration, formatMultiplier } from './lib.js';
 
 export function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -74,10 +74,22 @@ const platformLabel = (platform) =>
 
 export const manualPosts = (posts) => posts.filter((p) => p.origin === 'manual');
 
+// Facebook's extra columns, shown only when they were entered.
+function extras(p) {
+  const n = (v, label) => (v == null ? null : `${fmt(v)} ${label}`);
+  return [
+    n(p.reach, 'viewers'), n(p.impressions, 'impressions'), n(p.engagement, 'engagement'), n(p.follows, 'follows'),
+    p.distribution == null ? null : `distribution ${formatMultiplier(p.distribution)}`,
+    p.watch_seconds == null ? null : `watched ${formatDuration(p.watch_seconds)}`,
+    p.avg_watch_seconds == null ? null : `avg ${formatDuration(p.avg_watch_seconds)}`,
+    n(p.views_3s, 'three-second views'), n(p.views_1m, 'one-minute views'),
+  ].filter(Boolean).join(' · ');
+}
+
 // The hand-entered posts under the form; buttons carry the index into manualPosts(posts).
 export function manualList(posts) {
   const rows = manualPosts(posts).map((p, i) => `<li><span><b>${escapeHtml(platformLabel(p.platform))}</b>
-${escapeHtml(p.caption || p.post_id)} <small>${escapeHtml(fmt(p.views))} views · ${escapeHtml(fmt(p.likes))} likes · ${escapeHtml(fmt(p.comments))} comments</small></span>
+${escapeHtml(p.caption || p.post_id)} <small>${escapeHtml(fmt(p.views))} views · ${escapeHtml(fmt(p.likes))} likes · ${escapeHtml(fmt(p.comments))} comments</small>${extras(p) ? `<small>${escapeHtml(extras(p))}</small>` : ''}</span>
 <span class="acts"><button type="button" data-edit="${i}">Edit</button><button type="button" data-delete="${i}">Delete</button></span></li>`);
   return rows.length ? `<ul class="manual-list">${rows.join('')}</ul>` : '<p class="note">No numbers added by hand yet.</p>';
 }

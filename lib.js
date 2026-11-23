@@ -80,3 +80,29 @@ export function trendSnapshots(rows) {
     ...(r.previous == null ? [] : [{ source: r.source, metric: r.metric, value: r.previous, taken_at: r.previous_at }]),
   ]);
 }
+
+// Facebook shows watch time as "10m 47s"; it is stored as seconds. A bare number counts as seconds.
+export function parseDuration(text) {
+  const t = String(text ?? '').trim().toLowerCase();
+  if (/^\d+$/.test(t)) return Number(t);
+  const parts = [...t.matchAll(/(\d+)\s*([hms])/g)];
+  if (!parts.length || t.replace(/(\d+)\s*([hms])/g, '').trim() !== '') return null;
+  return parts.reduce((sum, [, n, u]) => sum + Number(n) * { h: 3600, m: 60, s: 1 }[u], 0);
+}
+
+export function formatDuration(seconds) {
+  if (seconds == null || !Number.isFinite(Number(seconds))) return '–';
+  const s = Number(seconds), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), r = s % 60;
+  return [h && `${h}h`, m && `${m}m`, (r || (!h && !m)) && !h ? `${r}s` : ''].filter(Boolean).join(' ');
+}
+
+// Facebook's "Distribution" column: "+0.6x" -> 0.6.
+export function parseMultiplier(text) {
+  const m = String(text ?? '').trim().match(/^([+-]?\d+(?:\.\d+)?)\s*x?$/i);
+  return m ? Number(m[1]) : null;
+}
+
+export function formatMultiplier(n) {
+  if (n == null || !Number.isFinite(Number(n))) return '–';
+  return `${Number(n) > 0 ? '+' : ''}${Number(n)}x`;
+}

@@ -1,7 +1,7 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm';
 import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
 import { todayStrip, platformCards, postsTable, accountsSection, manualList, manualPosts } from './render.js';
-import { trendSnapshots } from './lib.js';
+import { trendSnapshots, parseDuration, formatDuration, parseMultiplier, formatMultiplier } from './lib.js';
 
 // Implicit flow: the link works even when it is opened on a different device from the one that asked for it.
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
@@ -66,7 +66,8 @@ function filterAccounts() {
 
 let editing = null; // the {platform, post_id} being edited, so a changed link replaces the old entry
 
-const MANUAL_FIELDS = ['m-url', 'm-caption', 'm-date', 'm-views', 'm-likes', 'm-comments'];
+const EXTRA_NUMBERS = { 'm-reach': 'reach', 'm-impressions': 'impressions', 'm-engagement': 'engagement', 'm-follows': 'follows', 'm-3s': 'views_3s', 'm-1m': 'views_1m' };
+const MANUAL_FIELDS = ['m-url', 'm-caption', 'm-date', 'm-views', 'm-likes', 'm-comments', 'm-distribution', 'm-watch', 'm-avgwatch', ...Object.keys(EXTRA_NUMBERS)];
 function clearManual() {
   for (const id of MANUAL_FIELDS) $(id).value = ''; // "where" and the group name stay for the next post
   editing = null;
@@ -79,6 +80,10 @@ async function saveManual(e) {
   const group = $('m-group').value.trim();
   if (where === 'fb-group' && !group) { $('m-msg').textContent = 'Give the group a name.'; return; }
   const n = (id) => ($(id).value === '' ? null : Number($(id).value));
+  const text = (id) => $(id).value.trim();
+  const watch = parseDuration(text('m-watch')), avg = parseDuration(text('m-avgwatch')), dist = parseMultiplier(text('m-distribution'));
+  if ((text('m-watch') && watch == null) || (text('m-avgwatch') && avg == null)) { $('m-msg').textContent = 'Write watch times like 10m 47s or 8s.'; return; }
+  if (text('m-distribution') && dist == null) { $('m-msg').textContent = 'Write distribution like +0.6x.'; return; }
   const row = {
     platform: where === 'reddit' ? 'reddit' : `fb-group:${group}`,
     post_id: $('m-url').value.trim(),
@@ -86,6 +91,8 @@ async function saveManual(e) {
     caption: $('m-caption').value.trim() || null,
     posted_at: $('m-date').value ? new Date($('m-date').value + 'T12:00:00+02:00').toISOString() : null,
     views: n('m-views'), likes: n('m-likes'), comments: n('m-comments'),
+    ...Object.fromEntries(Object.entries(EXTRA_NUMBERS).map(([id, col]) => [col, n(id)])),
+    distribution: dist, watch_seconds: watch, avg_watch_seconds: avg,
     origin: 'manual', updated_at: new Date().toISOString(),
   };
   const { error } = await sb.from('posts').upsert(row, { onConflict: 'platform,post_id' });
@@ -109,6 +116,11 @@ function editManual(p) {
   $('m-views').value = p.views ?? '';
   $('m-likes').value = p.likes ?? '';
   $('m-comments').value = p.comments ?? '';
+  for (const [id, col] of Object.entries(EXTRA_NUMBERS)) $(id).value = p[col] ?? '';
+  $('m-distribution').value = p.distribution == null ? '' : formatMultiplier(p.distribution);
+  $('m-watch').value = p.watch_seconds == null ? '' : formatDuration(p.watch_seconds);
+  $('m-avgwatch').value = p.avg_watch_seconds == null ? '' : formatDuration(p.avg_watch_seconds);
+  $('m-more').open = Object.values(EXTRA_NUMBERS).some((c) => p[c] != null) || p.watch_seconds != null;
   editing = { platform: p.platform, post_id: p.post_id };
   $('m-save').textContent = 'Save changes';
   $('m-msg').textContent = 'Editing: change the numbers and save.';
