@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Gloomvein HQ</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Crect width=%2216%22 height=%2216%22 rx=%223%22 fill=%22%23120d09%22/%3E%3Ccircle cx=%228%22 cy=%228%22 r=%224%22 fill=%22%23ffd24a%22/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>Gloomvein HQ</h1>
+  <button id="signout" class="link" hidden>Sign out</button>
+</header>
+
+<main id="login" hidden>
+  <form id="login-form" class="panel">
+    <h2>Sign in</h2>
+    <p>Enter your email and open the link it sends you. This device then stays signed in.</p>
+    <input id="email" type="email" required autocomplete="email" placeholder="you@example.com">
+    <button type="submit">Send me a link</button>
+    <p id="login-msg" class="note"></p>
+  </form>
+</main>
+
+<main id="app" hidden>
+  <p id="problem" class="problem" hidden></p>
+  <section id="today"></section>
+
+  <h2>Platforms</h2>
+  <section id="platforms" class="cards"></section>
+
+  <h2>Posts</h2>
+  <div class="sorts" role="group" aria-label="Sort posts">
+    <button data-sort="newest" class="on">Newest</button>
+    <button data-sort="views">Views</button>
+    <button data-sort="likes">Likes</button>
+    <button data-sort="comments">Comments</button>
+  </div>
+  <div id="posts" class="scroll"></div>
+
+  <details class="panel">
+    <summary>Add numbers for a Reddit or Facebook group post</summary>
+    <form id="manual">
+      <label>Where
+        <select id="m-where"><option value="reddit">Reddit</option><option value="fb-group">Facebook group</option></select>
+      </label>
+      <label id="m-group-label" hidden>Group name <input id="m-group" maxlength="60"></label>
+      <label>Post link <input id="m-url" type="url" required placeholder="https://"></label>
+      <label>What it was <input id="m-caption" maxlength="200"></label>
+      <label>Posted on <input id="m-date" type="date"></label>
+      <div class="row3">
+        <label>Views <input id="m-views" type="number" min="0"></label>
+        <label>Likes <input id="m-likes" type="number" min="0"></label>
+        <label>Comments <input id="m-comments" type="number" min="0"></label>
+      </div>
+      <button type="submit">Save</button>
+      <p id="m-msg" class="note"></p>
+    </form>
+  </details>
+
+  <h2>Accounts</h2>
+  <input id="search" type="search" placeholder="Search accounts" aria-label="Search accounts">
+  <section id="accounts"></section>
+
+  <p id="updated" class="note"></p>
+</main>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
