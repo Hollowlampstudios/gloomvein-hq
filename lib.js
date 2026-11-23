@@ -40,10 +40,10 @@ export function formatSast(iso) {
   return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${hh}:${mm}`;
 }
 
-export function staleText(status, now) {
+export function staleText(status, now, maxAgeMs = STALE_MS) {
   if (!status || status.state === 'not_set_up') return 'not set up';
   if (!status.last_ok) return status.state === 'error' ? 'not working yet' : '';
-  if (now.getTime() - Date.parse(status.last_ok) > STALE_MS) return `stale since ${formatSast(status.last_ok)}`;
+  if (now.getTime() - Date.parse(status.last_ok) > maxAgeMs) return `stale since ${formatSast(status.last_ok)}`;
   return '';
 }
 

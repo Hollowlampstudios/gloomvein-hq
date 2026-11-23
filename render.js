@@ -6,6 +6,7 @@ export function escapeHtml(s) {
 }
 
 const safeUrl = (u) => (/^https:\/\//i.test(u ?? '') ? escapeHtml(u) : '');
+const DAILY_STALE_MS = 26 * 3600e3;
 const fmt = (n) => (n == null ? '–' : Number(n).toLocaleString('en-US'));
 
 const PLATFORMS = [
@@ -54,7 +55,9 @@ ${stat('wishlist', latest(snapshots, 'game', 'wishlist'))}
 
 export function platformCards(snapshots, statuses, now) {
   return PLATFORMS.map((p) => {
-    const note = staleText(statusFor(p.status, statuses), now);
+    const status = statusFor(p.status, statuses);
+    // The Metricool run is daily: allow a day plus slack before calling it stale.
+    const note = staleText(status, now, status?.source === 'metricool' ? DAILY_STALE_MS : undefined);
     const stats = p.metrics.map(([source, metric, label]) => {
       const t = weekTrend(snapshots, source, metric, now);
       return stat(label, t.current, t.delta);
