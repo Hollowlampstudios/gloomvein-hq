@@ -1,7 +1,7 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm';
-import { SUPABASE_URL, SUPABASE_KEY } from './config.js?v=1e4fcb52-1795445158';
-import { todayStrip, platformCards, postsTable, accountsSection, manualList, manualPosts, totalsStrip } from './render.js?v=1e4fcb52-1795445158';
-import { trendSnapshots, parseDuration, formatDuration, parseMultiplier, formatMultiplier } from './lib.js?v=1e4fcb52-1795445158';
+import { SUPABASE_URL, SUPABASE_KEY } from './config.js?v=361b825a-1795643163';
+import { todayStrip, platformCards, postsTable, accountsSection, manualList, manualPosts, totalsStrip, outreachSummary, outreachCards } from './render.js?v=361b825a-1795643163';
+import { trendSnapshots, parseDuration, formatDuration, parseMultiplier, formatMultiplier, staleText } from './lib.js?v=361b825a-1795643163';
 
 // Implicit flow: the link works even when it is opened on a different device from the one that asked for it.
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
@@ -11,26 +11,28 @@ const $ = (id) => document.getElementById(id);
 const PAGE_URL = location.origin + location.pathname;
 const PROJECT_LINK = 'https://supabase.com/dashboard/project/lrbrvcucomiygzbmvlwx';
 
-let data = { snapshots: [], posts: [], statuses: [], accounts: [], kofi: [], totals: [] };
+let data = { snapshots: [], posts: [], statuses: [], accounts: [], kofi: [], totals: [], outreach: [] };
 let sortKey = 'newest';
+let outreachFilter = 'all';
 
 async function load() {
   // The view does the week maths in the database: raw snapshots would be cut at 1000 rows (about 3.5 days).
-  const [trends, posts, statuses, accounts, kofi, totals] = await Promise.all([
+  const [trends, posts, statuses, accounts, kofi, totals, outreach] = await Promise.all([
     sb.from('metric_trends').select('*'),
     sb.from('posts').select('*').order('posted_at', { ascending: false, nullsFirst: false }).limit(200),
     sb.from('source_status').select('*'),
     sb.from('accounts').select('*'),
     sb.from('kofi').select('amount,currency,at'),
     sb.from('post_totals').select('*'),
+    sb.from('outreach').select('*'),
   ]);
-  const failed = [trends, posts, statuses, accounts, kofi, totals].find((r) => r.error);
+  const failed = [trends, posts, statuses, accounts, kofi, totals, outreach].find((r) => r.error);
   if (failed) {
     showProblem(failed.error.message);
     return;
   }
   $('problem').hidden = true;
-  data = { snapshots: trendSnapshots(trends.data), posts: posts.data, statuses: statuses.data, accounts: accounts.data, kofi: kofi.data, totals: totals.data };
+  data = { snapshots: trendSnapshots(trends.data), posts: posts.data, statuses: statuses.data, accounts: accounts.data, kofi: kofi.data, totals: totals.data, outreach: outreach.data };
   render();
 }
 
@@ -52,12 +54,52 @@ function render() {
   $('m-list').innerHTML = manualList(data.posts);
   $('accounts').innerHTML = accountsSection(data.accounts);
   filterAccounts();
+  renderOutreach();
   $('updated').textContent = `Loaded ${now.toLocaleString('en-GB', { timeZone: 'Africa/Johannesburg' })}. The data itself updates every hour.`;
+}
+
+function renderOutreach() {
+  const now = new Date();
+  $('o-summary').innerHTML = outreachSummary(data.outreach, now);
+  // Keep a half-typed note: don't redraw the cards while one of their fields has focus.
+  if (!$('o-cards').contains(document.activeElement)) $('o-cards').innerHTML = outreachCards(data.outreach, outreachFilter, now);
+  for (const b of document.querySelectorAll('[data-ofilter]')) b.classList.toggle('on', b.dataset.ofilter === outreachFilter);
+  const st = data.statuses.find((s) => s.source === 'outreach');
+  const stale = staleText(st, now, 26 * 3600e3);
+  $('o-status').textContent = stale ? `Inbox check: ${stale}.` : st?.last_ok ? `Inbox last checked ${new Date(st.last_ok).toLocaleString('en-GB', { timeZone: 'Africa/Johannesburg' })}.` : '';
+}
+
+async function saveOutreach(e) {
+  e.preventDefault();
+  const form = e.target;
+  const msg = form.querySelector('.o-msg');
+  const video = form.video.value.trim();
+  if (video && !/^https:\/\//i.test(video)) { msg.textContent = 'The link must start with https://'; return; }
+  msg.textContent = 'Saving…';
+  const { error } = await sb.from('outreach').update({ video_url: video || null, notes: form.notes.value.trim() || null }).eq('email', form.dataset.email);
+  msg.textContent = error ? `Not saved: ${error.message}` : 'Saved.';
+  if (!error) { document.activeElement?.blur(); load(); }
+}
+
+// Two views on one page: #outreach opens the tracker, anything else the dashboard (so a bookmark keeps its view).
+function showView() {
+  const view = location.hash === '#outreach' ? 'outreach' : 'dash';
+  $('view-outreach').hidden = view !== 'outreach';
+  $('view-dash').hidden = view !== 'dash';
+  for (const b of document.querySelectorAll('[data-view]')) b.classList.toggle('on', b.dataset.view === view);
 }
 
 function renderPosts() {
   $('posts').innerHTML = postsTable(data.posts, sortKey);
-  for (const b of document.querySelectorAll('[data-sort]')) b.classList.toggle('on', b.dataset.sort === sortKey);
+  for (const b of document.querySelectorAll('[data-view]')) b.addEventListener('click', () => {
+  history.replaceState(null, '', b.dataset.view === 'outreach' ? '#outreach' : location.pathname);
+  showView();
+  scrollTo(0, 0);
+});
+window.addEventListener('hashchange', showView);
+for (const b of document.querySelectorAll('[data-ofilter]')) b.addEventListener('click', () => { outreachFilter = b.dataset.ofilter; document.activeElement?.blur(); renderOutreach(); });
+$('o-cards').addEventListener('submit', (e) => { if (e.target.matches('.o-form')) saveOutreach(e); });
+for (const b of document.querySelectorAll('[data-sort]')) b.classList.toggle('on', b.dataset.sort === sortKey);
 }
 
 function filterAccounts() {
@@ -143,12 +185,13 @@ async function onManualList(e) {
 }
 
 function showLogin() {
-  $('login').hidden = false; $('app').hidden = true; $('signout').hidden = true;
+  $('login').hidden = false; $('app').hidden = true; $('nav').hidden = true;
 }
 
 let timer;
 function showApp() {
-  $('login').hidden = true; $('app').hidden = false; $('signout').hidden = false;
+  $('login').hidden = true; $('app').hidden = false; $('nav').hidden = false;
+  showView();
   load();
   clearInterval(timer);
   timer = setInterval(load, 5 * 60e3);
@@ -169,6 +212,14 @@ $('search').addEventListener('input', filterAccounts);
 $('manual').addEventListener('submit', saveManual);
 $('m-list').addEventListener('click', onManualList);
 $('m-where').addEventListener('change', () => { $('m-group-label').hidden = $('m-where').value !== 'fb-group'; });
+for (const b of document.querySelectorAll('[data-view]')) b.addEventListener('click', () => {
+  history.replaceState(null, '', b.dataset.view === 'outreach' ? '#outreach' : location.pathname);
+  showView();
+  scrollTo(0, 0);
+});
+window.addEventListener('hashchange', showView);
+for (const b of document.querySelectorAll('[data-ofilter]')) b.addEventListener('click', () => { outreachFilter = b.dataset.ofilter; document.activeElement?.blur(); renderOutreach(); });
+$('o-cards').addEventListener('submit', (e) => { if (e.target.matches('.o-form')) saveOutreach(e); });
 for (const b of document.querySelectorAll('[data-sort]')) b.addEventListener('click', () => { sortKey = b.dataset.sort; renderPosts(); });
 document.addEventListener('visibilitychange', () => { if (!document.hidden && !$('app').hidden) load(); });
 

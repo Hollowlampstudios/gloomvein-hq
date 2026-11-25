@@ -106,3 +106,13 @@ export function formatMultiplier(n) {
   if (n == null || !Number.isFinite(Number(n))) return '–';
   return `${Number(n) > 0 ? '+' : ''}${Number(n)}x`;
 }
+
+// Outreach: one creator's state. A video beats a reply; a waiting creator is due the one follow-up from 2 Dec (SAST).
+const FOLLOW_UP = Date.parse('2026-12-02T00:00:00+02:00');
+export function outreachStatus(r, now) {
+  if (r.video_url) return 'video';
+  if (r.bounced_at && !r.replied_at) return 'bounced';
+  if (r.replied_at) return 'replied';
+  if (!r.emailed_at) return 'not_sent';
+  return now.getTime() >= FOLLOW_UP ? 'followup' : 'waiting';
+}

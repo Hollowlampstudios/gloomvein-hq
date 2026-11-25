@@ -1,5 +1,5 @@
 // Builds the page's HTML strings. No Supabase calls, no DOM: every text value goes through escapeHtml.
-import { latest, weekTrend, formatDelta, formatSast, staleText, sortPosts, groupAccounts, daysToLaunch, formatDuration, formatMultiplier } from './lib.js?v=1e4fcb52-1795445158';
+import { latest, weekTrend, formatDelta, formatSast, staleText, sortPosts, groupAccounts, daysToLaunch, formatDuration, formatMultiplier, outreachStatus } from './lib.js?v=361b825a-1795643163';
 
 export function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -135,4 +135,68 @@ ${stat('likes', sum('likes'))}
 ${stat('comments', sum('comments'))}
 ${stat('reposts / shares', sum('shares'))}
 </div>${breakdown ? `<p class="note">Views by place: ${escapeHtml(breakdown)}</p>` : ''}`;
+}
+
+// Outreach tracker (the Outreach button). Same stone cards and tags as the game's Workshop.
+const OUTREACH_TAG = {
+  video: ['VIDEO OUT', 'gold'], replied: ['REPLIED', 'teal'], bounced: ['BOUNCED', 'red'],
+  followup: ['FOLLOW-UP DUE', 'ember'], waiting: ['WAITING', 'grey'], not_sent: ['NOT SENT', 'grey'],
+};
+const OUTREACH_FILTER = {
+  all: () => true,
+  waiting: (s) => s === 'waiting' || s === 'followup' || s === 'not_sent',
+  replied: (s) => s === 'replied' || s === 'video',
+  bounced: (s) => s === 'bounced',
+};
+const RANK = { video: 0, replied: 1, bounced: 2, followup: 3, waiting: 4, not_sent: 5 };
+const day = (iso) => (iso ? formatSast(iso).split(' ').slice(0, 2).join(' ') : '');
+
+export function outreachSummary(rows, now) {
+  const st = rows.map((r) => outreachStatus(r, now));
+  const count = (...keys) => st.filter((s) => keys.includes(s)).length;
+  const emailed = rows.filter((r) => r.emailed_at).length;
+  return `<div class="strip">
+<div class="stat"><b>${emailed}</b><small>emailed</small></div>
+<div class="stat"><b>${count('replied', 'video')}</b><small>replied</small></div>
+<div class="stat"><b>${count('video')}</b><small>videos</small></div>
+<div class="stat"><b>${count('waiting', 'followup')}</b><small>waiting</small></div>
+<div class="stat"><b>${count('bounced')}</b><small>bounced</small></div>
+</div>`;
+}
+
+export function outreachCards(rows, filter, now) {
+  const keep = OUTREACH_FILTER[filter] ?? OUTREACH_FILTER.all;
+  const items = rows.map((r) => ({ r, s: outreachStatus(r, now) })).filter(({ s }) => keep(s))
+    .sort((a, b) => RANK[a.s] - RANK[b.s]
+      || (Date.parse(b.r.replied_at ?? 0) || 0) - (Date.parse(a.r.replied_at ?? 0) || 0)
+      || String(a.r.name).localeCompare(String(b.r.name)));
+  if (!items.length) return '<p class="note">Nobody here yet.</p>';
+  return items.map(({ r, s }) => {
+    const [tag, colour] = OUTREACH_TAG[s];
+    const channel = safeUrl(r.channel_url);
+    const video = safeUrl(r.video_url);
+    const name = channel ? `<a href="${channel}" target="_blank" rel="noopener">${escapeHtml(r.name)}</a>` : escapeHtml(r.name);
+    const chips = [r.subs && `${r.subs} subs`, r.list && `list ${r.list}`, r.emailed_at && `emailed ${day(r.emailed_at)}`]
+      .filter(Boolean).map((c) => `<span class="chip">${escapeHtml(c)}</span>`).join('');
+    const lines = [
+      r.plays && `<p class="plays">${escapeHtml(r.plays)}</p>`,
+      r.subject && `<p class="subject">Sent: ${escapeHtml(r.subject)}</p>`,
+      r.replied_at && `<p class="reply">Replied ${escapeHtml(day(r.replied_at))}: ${escapeHtml(r.reply_subject ?? '')} <span class="note">(read it in gloomvein@gmail.com)</span></p>`,
+      s === 'bounced' && `<p class="bounce">Bounced ${escapeHtml(day(r.bounced_at))}: the address didn't take it.</p>`,
+      video && `<p class="video"><a href="${video}" target="_blank" rel="noopener">Watch their video</a></p>`,
+      r.notes && `<p class="notes">${escapeHtml(r.notes)}</p>`,
+    ].filter(Boolean).join('');
+    const email = escapeHtml(r.email);
+    return `<article class="creator s-${s}">
+<div class="c-head"><h3>${name}</h3><span class="tag ${colour}">${tag}</span></div>
+<div class="chips">${chips}</div>${lines}
+<details class="c-edit"><summary>Video link and notes</summary>
+<form class="o-form" data-email="${email}">
+<label>Video link <input name="video" type="url" placeholder="https://" value="${escapeHtml(r.video_url ?? '')}"></label>
+<label>Notes <textarea name="notes" maxlength="1000" rows="2">${escapeHtml(r.notes ?? '')}</textarea></label>
+<button type="submit" class="gold">Save</button> <span class="o-msg note" aria-live="polite"></span>
+</form></details>
+<small class="addr">${email}</small>
+</article>`;
+  }).join('\n');
 }

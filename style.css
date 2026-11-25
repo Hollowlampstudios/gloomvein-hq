@@ -1,75 +1,177 @@
-@font-face { font-family: "Lilita One"; src: url("LilitaOne-Regular.ttf?v=1e4fcb52-1795445158") format("truetype"); font-display: swap; }
+/* The game's own interface ("Slate and Vein", scripts/ui_skin.gd): cool carved cave stone, gold only where you act
+   or look, teal for what is on. The pieces are the game's Art v4 files in art/, nine-sliced with border-image using
+   the game's corner sizes (UiSkin.MARGINS) at 1 CSS px per texel, and kept crisp with image-rendering: pixelated. */
+@font-face { font-family: "Lilita One"; src: url("LilitaOne-Regular.ttf?v=361b825a-1795643163") format("truetype"); font-display: swap; }
 :root {
-  --bg: #120d09; --rock: #1d1610; --edge: #3a2c1e; --ink: #f2e4c6; --soft: #c4b394; --dim: #8c7c62;
-  --gold: #ffd24a; --ember: #ff8a3a; --violet: #b98cff; --up: #7cc25e; --bad: #e2694c;
-  --display: "Lilita One", system-ui, sans-serif; --text: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --base: #141a24; --stone: #1f2836; --edge: #3a4658; --raised: #2b3648;
+  --gold: #f2b52c; --gold-hi: #ffe27a; --teal: #4fd6c8; --ember: #d8553a;
+  --text: #eef0f4; --muted: #9aa6b8; --dim: #5f6b7e; --ink: #121722; --good: #8ee07a; --bad: #ff8a72; --outline: #0a0d14;
+  --font: "Lilita One", system-ui, sans-serif;
+  --outlined: -1px -1px 0 var(--outline), 1px -1px 0 var(--outline), -1px 1px 0 var(--outline), 1px 1px 0 var(--outline), 0 2px 0 var(--outline);
 }
 * { box-sizing: border-box; }
-html { color-scheme: dark; }
-body { margin: 0; background: var(--bg); color: var(--ink); font: 1rem/1.5 var(--text); }
+html { color-scheme: dark; background: var(--base); }
+body {
+  margin: 0; color: var(--text); font: 1rem/1.4 var(--font); letter-spacing: 0.01em;
+  /* The Glimmer layer's crystal cave behind the top of the page, dimmed so the panels stay readable. */
+  background: linear-gradient(rgba(20, 26, 36, 0.45), rgba(20, 26, 36, 0.8) 420px, var(--base) 900px),
+    url("art/bg_glimmer.png") top center / max(100%, 900px) auto no-repeat, var(--base);
+  image-rendering: pixelated;
+}
+img { image-rendering: pixelated; }
 header, main { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
-header { display: flex; align-items: center; justify-content: space-between; padding-top: 16px; }
-h1, h2, h3 { font-family: var(--display); font-weight: 400; margin: 0; line-height: 1.15; }
-h1 { color: var(--gold); font-size: 1.8rem; }
-h2 { font-size: 1.5rem; margin: 28px 0 10px; }
-h3 { font-size: 1.15rem; color: var(--gold); }
-a { color: var(--gold); }
-button, input, select { font: inherit; color: var(--ink); }
-button { background: #2a2018; border: 2px solid #4a3a2a; border-radius: 8px; padding: 6px 14px; cursor: pointer; }
-button:hover { background: #342818; }
-button.link { background: none; border: none; color: var(--soft); text-decoration: underline; padding: 0; }
-input, select { background: var(--rock); border: 2px solid var(--edge); border-radius: 8px; padding: 8px 10px; width: 100%; }
-.note { color: var(--dim); font-size: 0.9rem; }
-.panel { background: var(--rock); border: 2px solid var(--edge); border-radius: 12px; padding: 16px; margin: 16px 0; }
-#login-form { max-width: 420px; margin: 40px auto; display: grid; gap: 12px; }
-.problem { background: #3a1a12; border: 2px solid var(--bad); border-radius: 10px; padding: 12px; margin-top: 16px; }
+[hidden] { display: none !important; }
 
-.launch { font-family: var(--display); color: var(--ember); font-size: 1.3rem; margin: 12px 0 8px; }
-.strip { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
-.stat { background: var(--rock); border: 2px solid var(--edge); border-radius: 10px; padding: 8px 10px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 6px; min-width: 0; }
-.stat b { font-family: var(--display); font-weight: 400; font-size: 1.4rem; color: var(--ink); }
-.stat small { flex-basis: 100%; color: var(--soft); font-size: 0.8rem; }
-.delta { font-size: 0.9rem; }
-.delta.up { color: var(--up); }
+/* Header: the game's top bar (ui_header) with the logo. */
+header {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+  margin-top: 12px; padding: 12px 18px 22px;
+  border: solid transparent; border-width: 18px 22px 26px; border-image: url("art/ui_header.png") 30 40 46 40 fill / 18px 22px 26px stretch;
+}
+h1 { margin: 0; display: flex; align-items: center; gap: 10px; }
+h1 img { display: block; height: 60px; width: auto; }
+h1 span { font-size: 2rem; color: var(--gold); text-shadow: var(--outlined); }
+nav { display: flex; gap: 8px; flex-wrap: wrap; }
+
+h1, h2, h3 { font-family: var(--font); font-weight: 400; line-height: 1.15; }
+h2 {
+  font-size: 1.7rem; margin: 30px 0 12px; text-transform: uppercase; text-shadow: var(--outlined);
+  padding-bottom: 6px; border-bottom: 3px solid var(--gold); display: inline-block;
+}
+h3 { margin: 0; font-size: 1.2rem; color: var(--text); text-shadow: var(--outlined); }
+a { color: var(--gold-hi); }
+.note { color: var(--muted); font-size: 0.92rem; }
+
+/* Buttons: the game's dark stone button; gold = the main action; red = leave/close; teal rim = selected. */
+button {
+  font: inherit; color: var(--text); text-transform: uppercase; text-shadow: var(--outlined); cursor: pointer;
+  min-height: 40px; padding: 4px 14px; background: none;
+  border: solid transparent; border-width: 12px 14px; border-image: url("art/ui_button_dark.png") 16 14 fill / 12px 14px stretch;
+}
+button.gold { border-image-source: url("art/ui_button_gold.png"); color: var(--ink); text-shadow: 0 1px 0 var(--gold-hi); }
+button.red { border-image-source: url("art/ui_button_red.png"); }
+button:hover { filter: brightness(1.15); }
+button:active { filter: brightness(0.9); transform: translateY(1px); }
+button.on { color: var(--teal); outline: 2px solid var(--teal); outline-offset: -4px; }
+button.link { border: none; min-height: 0; padding: 0; text-transform: none; text-decoration: underline; color: var(--muted); }
+
+/* Inputs: the game's sunken slot. */
+input, select, textarea {
+  font: 1rem/1.3 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--text); width: 100%;
+  background: none; padding: 4px 6px;
+  border: solid transparent; border-width: 9px; border-image: url("art/ui_slot.png") 12 fill / 9px stretch;
+}
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--teal); outline-offset: 0; }
+select option { background: var(--stone); }
+textarea { resize: vertical; }
+summary { cursor: pointer; color: var(--muted); text-transform: uppercase; }
+summary:hover { color: var(--text); }
+
+/* Big panels: the carved stone frame with gold veins (ui_panel). */
+.panel, #login-form {
+  margin: 16px 0; padding: 10px 12px;
+  border: solid transparent; border-width: 26px; border-image: url("art/ui_panel.png") 34 fill / 26px stretch;
+}
+#login-form { max-width: 440px; margin: 40px auto; display: grid; gap: 12px; }
+#login-form h2 { margin: 0; border: none; }
+.problem { background: #3a1a12; border: 2px solid var(--ember); border-radius: 6px; padding: 12px; margin-top: 16px; }
+
+/* Stone cards (ui_card), the look of a Workshop row. */
+.stat, .card, .acct, .creator, .manual-list li {
+  border: solid transparent; border-width: 12px; border-image: url("art/ui_card.png") 14 fill / 12px stretch;
+}
+.launch { color: var(--gold); font-size: 1.5rem; text-shadow: var(--outlined); margin: 18px 0 10px; text-transform: uppercase; }
+.strip { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.stat { padding: 2px 4px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 6px; min-width: 0; }
+.stat b { font-weight: 400; font-size: 1.6rem; color: var(--text); text-shadow: var(--outlined); }
+.stat small { flex-basis: 100%; color: var(--muted); font-size: 0.8rem; text-transform: uppercase; }
+.delta { font-size: 0.95rem; text-shadow: var(--outlined); }
+.delta.up { color: var(--good); }
 .delta.down { color: var(--bad); }
 .delta.none { color: var(--dim); }
 
-.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
-.card { background: var(--rock); border: 2px solid var(--edge); border-radius: 12px; padding: 12px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.card { padding: 4px 6px; }
 .card .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 6px; margin-top: 8px; }
-.card .stat { border: none; padding: 0; background: none; }
-.card.stale { border-color: #6a4a2a; }
-.card .note { margin: 8px 0 0; color: var(--ember); }
+.card .stat { border: none; padding: 0; }
+.card.stale { box-shadow: inset 4px 0 0 var(--ember); }
+.card .note { margin: 8px 0 0; color: var(--bad); }
 
-.sorts { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
-.sorts button.on { border-color: var(--gold); color: var(--gold); }
-.scroll { overflow-x: auto; }
-.posts { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-.posts th, .posts td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--edge); vertical-align: top; }
-.posts th { color: var(--soft); font-weight: 600; white-space: nowrap; }
+.sorts { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.scroll { overflow-x: auto; border: solid transparent; border-width: 12px; border-image: url("art/ui_card.png") 14 fill / 12px stretch; }
+.posts { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+.posts th, .posts td { text-align: left; padding: 6px 8px; border-bottom: 2px solid var(--edge); vertical-align: top; }
+.posts tr:last-child td { border-bottom: none; }
+.posts th { color: var(--muted); font-weight: 400; white-space: nowrap; text-transform: uppercase; }
 .posts .n { text-align: right; white-space: nowrap; }
-.posts td:first-child { white-space: nowrap; }
-.posts .cap { min-width: 180px; }
+.posts td:first-child { white-space: nowrap; color: var(--muted); }
+.posts .cap { min-width: 180px; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
 .posts .empty { color: var(--dim); }
 
 #manual { display: grid; gap: 10px; margin-top: 12px; }
-#manual label { display: grid; gap: 4px; color: var(--soft); font-size: 0.9rem; }
+#manual label, .o-form label { display: grid; gap: 2px; color: var(--muted); font-size: 0.9rem; text-transform: uppercase; }
 .row3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-summary { cursor: pointer; color: var(--soft); }
+h3.sub { margin: 16px 0 6px; font-size: 1.05rem; }
+.manual-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+.manual-list li { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 2px 4px; flex-wrap: wrap; }
+.manual-list li span:first-child { display: grid; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
+.manual-list small { color: var(--muted); }
+.manual-list .acts { display: flex; gap: 6px; }
 
 #search { margin-bottom: 12px; }
 .acct-group { margin-bottom: 18px; }
+.acct-group h3 { color: var(--gold); }
 .acct-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; margin-top: 8px; }
-.acct { display: grid; gap: 2px; background: var(--rock); border: 2px solid var(--edge); border-radius: 10px; padding: 10px; text-decoration: none; color: var(--ink); min-width: 0; }
-.acct:hover { border-color: var(--gold); }
-.acct strong { color: var(--ink); }
-.acct span { color: var(--soft); font-size: 0.9rem; }
+.acct { display: grid; gap: 2px; padding: 2px 4px; text-decoration: none; color: var(--text); min-width: 0; }
+.acct:hover { filter: brightness(1.15); }
+.acct strong { font-weight: 400; text-shadow: var(--outlined); }
+.acct span { color: var(--muted); font-size: 0.9rem; }
 .acct small { color: var(--dim); font-size: 0.8rem; overflow-wrap: anywhere; }
-.badge { font-size: 0.75rem; color: var(--violet); border: 1px solid var(--violet); border-radius: 6px; padding: 0 5px; margin-left: 4px; }
-[hidden] { display: none !important; }
-h3.sub { margin: 16px 0 6px; font-size: 1rem; }
-.manual-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
-.manual-list li { display: flex; justify-content: space-between; align-items: center; gap: 8px; border: 1px solid var(--edge); border-radius: 8px; padding: 8px 10px; flex-wrap: wrap; }
-.manual-list li span:first-child { display: grid; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
-.manual-list small { color: var(--dim); }
-.manual-list .acts { display: flex; gap: 6px; }
+.badge, .tag, .chip { font-size: 0.78rem; text-transform: uppercase; padding: 2px 7px; border-radius: 3px; white-space: nowrap; }
+.acct .badge { color: var(--ink); background: var(--muted); margin-left: 4px; text-shadow: none; font-size: 0.75rem; }
+
+/* Outreach: one stone card per creator; the strip down the left and the tag say where it stands. */
+.creators { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 10px; }
+.creator { padding: 2px 6px 2px 10px; display: grid; gap: 6px; align-content: start; min-width: 0; box-shadow: inset 4px 0 0 var(--dim); }
+.creator.s-video { box-shadow: inset 4px 0 0 var(--gold); }
+.creator.s-replied { box-shadow: inset 4px 0 0 var(--teal); }
+.creator.s-bounced { box-shadow: inset 4px 0 0 var(--ember); }
+.creator.s-followup { box-shadow: inset 4px 0 0 var(--bad); }
+.creator p { margin: 0; }
+.c-head { display: flex; justify-content: space-between; align-items: start; gap: 8px; }
+.c-head a { color: var(--text); text-decoration: none; }
+.c-head a:hover { color: var(--gold-hi); }
+.tag { color: var(--ink); text-shadow: none; }
+.tag.gold { background: var(--gold); }
+.tag.teal { background: var(--teal); }
+.tag.red { background: var(--ember); color: var(--text); }
+.tag.ember { background: var(--bad); }
+.tag.grey { background: #c4ccd6; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { background: var(--ink); color: var(--text); text-shadow: var(--outlined); }
+.plays { color: var(--muted); }
+.subject, .notes { font: 0.9rem/1.35 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--muted); }
+.notes { color: var(--text); white-space: pre-wrap; }
+.reply { color: var(--teal); }
+.bounce { color: var(--bad); }
+.video a { color: var(--gold-hi); }
+.c-edit summary { font-size: 0.85rem; }
+.o-form { display: grid; gap: 8px; margin-top: 8px; }
+.o-form button { justify-self: start; }
+.addr { color: var(--dim); font-size: 0.8rem; overflow-wrap: anywhere; }
+
+@media (max-width: 520px) {
+  header { padding: 8px 10px 18px; }
+  h1 img { height: 42px; }
+  h2 { font-size: 1.45rem; }
+  .row3 { grid-template-columns: repeat(2, 1fr); }
+  .creators { grid-template-columns: 1fr; }
+  header { margin-top: 6px; gap: 6px; }
+  h1 span { font-size: 1.5rem; }
+  nav { gap: 4px; }
+  nav button { min-height: 34px; padding: 0 4px; font-size: 0.78rem; border-width: 9px 10px; }
+  .strip { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .stat b { font-size: 1.3rem; }
+  .stat small { font-size: 0.7rem; }
+}
+#o-summary { margin-bottom: 12px; }
