@@ -1,5 +1,5 @@
 // Builds the page's HTML strings. No Supabase calls, no DOM: every text value goes through escapeHtml.
-import { latest, weekTrend, formatDelta, formatSast, staleText, sortPosts, groupAccounts, daysToLaunch, formatDuration, formatMultiplier, outreachStatus } from './lib.js?v=0c7b9193-1795786338';
+import { latest, weekTrend, formatDelta, formatSast, staleText, sortPosts, groupAccounts, daysToLaunch, formatDuration, formatMultiplier, outreachStatus } from './lib.js?v=deaa6758-1795789052';
 
 export function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -160,7 +160,7 @@ export function outreachSummary(rows, now) {
 <div class="stat"><b>${count('your_turn')}</b><small>your turn</small></div>
 <div class="stat"><b>${emailed}</b><small>emailed</small></div>
 <div class="stat"><b>${count('replied', 'video', 'your_turn')}</b><small>replied</small></div>
-<div class="stat"><b>${count('video')}</b><small>videos</small></div>
+<div class="stat"><b>${rows.filter((r) => r.video_url).length}</b><small>videos</small></div>
 <div class="stat"><b>${count('waiting', 'followup')}</b><small>waiting</small></div>
 <div class="stat"><b>${count('bounced')}</b><small>bounced</small></div>
 </div>`;
