@@ -1,5 +1,5 @@
 // Builds the page's HTML strings. No Supabase calls, no DOM: every text value goes through escapeHtml.
-import { latest, weekTrend, formatDelta, formatSast, staleText, sortPosts, groupAccounts, daysToLaunch, formatDuration, formatMultiplier, outreachStatus } from './lib.js?v=6671923c-1795786057';
+import { latest, weekTrend, formatDelta, formatSast, staleText, sortPosts, groupAccounts, daysToLaunch, formatDuration, formatMultiplier, outreachStatus } from './lib.js?v=0c7b9193-1795786338';
 
 export function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -173,7 +173,8 @@ function thread(r) {
     const who = m.direction === 'out' ? 'You' : escapeHtml(r.name);
     const paras = String(m.body ?? '').split(/\n\s*\n/).filter((p) => p.trim())
       .map((p) => `<p>${escapeHtml(p.trim()).replace(/\n/g, '<br>')}</p>`).join('');
-    return `<details class="msg ${m.direction === 'out' ? 'out' : 'in'}"${i === last ? ' open' : ''}>`
+    const open = i === last && !(last === 0 && m.direction === 'out'); // a lone pitch stays folded
+    return `<details class="msg ${m.direction === 'out' ? 'out' : 'in'}"${open ? ' open' : ''}>`
       + `<summary>${who}, ${escapeHtml(m.sent_at ? formatSast(m.sent_at) : '')}</summary>${paras}</details>`;
   }).join('')}</div>`;
 }

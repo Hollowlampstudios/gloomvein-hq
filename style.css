@@ -1,7 +1,7 @@
 /* The game's own interface ("Slate and Vein", scripts/ui_skin.gd): cool carved cave stone, gold only where you act
    or look, teal for what is on. The pieces are the game's Art v4 files in art/, nine-sliced with border-image using
    the game's corner sizes (UiSkin.MARGINS) at 1 CSS px per texel, and kept crisp with image-rendering: pixelated. */
-@font-face { font-family: "Lilita One"; src: url("LilitaOne-Regular.ttf?v=6671923c-1795786057") format("truetype"); font-display: swap; }
+@font-face { font-family: "Lilita One"; src: url("LilitaOne-Regular.ttf?v=0c7b9193-1795786338") format("truetype"); font-display: swap; }
 :root {
   --base: #141a24; --stone: #1f2836; --edge: #3a4658; --raised: #2b3648;
   --gold: #f2b52c; --gold-hi: #ffe27a; --teal: #4fd6c8; --ember: #d8553a;
