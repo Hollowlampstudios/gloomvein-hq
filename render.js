@@ -1,5 +1,5 @@
 // Builds the page's HTML strings. No Supabase calls, no DOM: every text value goes through escapeHtml.
-import { latest, weekTrend, formatDelta, formatSast, staleText, sortPosts, groupAccounts, daysToLaunch, formatDuration, formatMultiplier, outreachStatus } from './lib.js?v=361b825a-1795643163';
+import { latest, weekTrend, formatDelta, formatSast, staleText, sortPosts, groupAccounts, daysToLaunch, formatDuration, formatMultiplier, outreachStatus } from './lib.js?v=6671923c-1795786057';
 
 export function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -139,16 +139,17 @@ ${stat('reposts / shares', sum('shares'))}
 
 // Outreach tracker (the Outreach button). Same stone cards and tags as the game's Workshop.
 const OUTREACH_TAG = {
-  video: ['VIDEO OUT', 'gold'], replied: ['REPLIED', 'teal'], bounced: ['BOUNCED', 'red'],
+  your_turn: ['YOUR TURN', 'ember'], video: ['VIDEO OUT', 'gold'], replied: ['REPLIED', 'teal'], bounced: ['BOUNCED', 'red'],
   followup: ['FOLLOW-UP DUE', 'ember'], waiting: ['WAITING', 'grey'], not_sent: ['NOT SENT', 'grey'],
 };
 const OUTREACH_FILTER = {
   all: () => true,
   waiting: (s) => s === 'waiting' || s === 'followup' || s === 'not_sent',
-  replied: (s) => s === 'replied' || s === 'video',
+  replied: (s) => s === 'replied' || s === 'video' || s === 'your_turn',
   bounced: (s) => s === 'bounced',
+  your_turn: (s) => s === 'your_turn',
 };
-const RANK = { video: 0, replied: 1, bounced: 2, followup: 3, waiting: 4, not_sent: 5 };
+const RANK = { your_turn: -1, video: 0, replied: 1, bounced: 2, followup: 3, waiting: 4, not_sent: 5 };
 const day = (iso) => (iso ? formatSast(iso).split(' ').slice(0, 2).join(' ') : '');
 
 export function outreachSummary(rows, now) {
@@ -156,12 +157,25 @@ export function outreachSummary(rows, now) {
   const count = (...keys) => st.filter((s) => keys.includes(s)).length;
   const emailed = rows.filter((r) => r.emailed_at).length;
   return `<div class="strip">
+<div class="stat"><b>${count('your_turn')}</b><small>your turn</small></div>
 <div class="stat"><b>${emailed}</b><small>emailed</small></div>
-<div class="stat"><b>${count('replied', 'video')}</b><small>replied</small></div>
+<div class="stat"><b>${count('replied', 'video', 'your_turn')}</b><small>replied</small></div>
 <div class="stat"><b>${count('video')}</b><small>videos</small></div>
 <div class="stat"><b>${count('waiting', 'followup')}</b><small>waiting</small></div>
 <div class="stat"><b>${count('bounced')}</b><small>bounced</small></div>
 </div>`;
+}
+
+// The conversation on a card: one fold per message, only the newest open. Every word is the sender's: escaped.
+function thread(r) {
+  const last = r.messages.length - 1;
+  return `<div class="thread">${r.messages.map((m, i) => {
+    const who = m.direction === 'out' ? 'You' : escapeHtml(r.name);
+    const paras = String(m.body ?? '').split(/\n\s*\n/).filter((p) => p.trim())
+      .map((p) => `<p>${escapeHtml(p.trim()).replace(/\n/g, '<br>')}</p>`).join('');
+    return `<details class="msg ${m.direction === 'out' ? 'out' : 'in'}"${i === last ? ' open' : ''}>`
+      + `<summary>${who}, ${escapeHtml(m.sent_at ? formatSast(m.sent_at) : '')}</summary>${paras}</details>`;
+  }).join('')}</div>`;
 }
 
 export function outreachCards(rows, filter, now) {
@@ -181,7 +195,7 @@ export function outreachCards(rows, filter, now) {
     const lines = [
       r.plays && `<p class="plays">${escapeHtml(r.plays)}</p>`,
       r.subject && `<p class="subject">Sent: ${escapeHtml(r.subject)}</p>`,
-      r.replied_at && `<p class="reply">Replied ${escapeHtml(day(r.replied_at))}: ${escapeHtml(r.reply_subject ?? '')} <span class="note">(read it in gloomvein@gmail.com)</span></p>`,
+      r.messages?.length ? thread(r) : r.replied_at && `<p class="reply">Replied ${escapeHtml(day(r.replied_at))}: ${escapeHtml(r.reply_subject ?? '')} <span class="note">(read it in gloomvein@gmail.com)</span></p>`,
       s === 'bounced' && `<p class="bounce">Bounced ${escapeHtml(day(r.bounced_at))}: the address didn't take it.</p>`,
       video && `<p class="video"><a href="${video}" target="_blank" rel="noopener">Watch their video</a></p>`,
       r.notes && `<p class="notes">${escapeHtml(r.notes)}</p>`,

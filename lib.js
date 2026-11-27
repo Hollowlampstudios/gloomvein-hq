@@ -107,9 +107,19 @@ export function formatMultiplier(n) {
   return `${Number(n) > 0 ? '+' : ''}${Number(n)}x`;
 }
 
+// Each creator row gets `messages`: its own conversation (outreach_messages), oldest first.
+export function attachMessages(rows, messages) {
+  const by = new Map();
+  for (const m of messages ?? []) (by.get(m.email) ?? by.set(m.email, []).get(m.email)).push(m);
+  const at = (m) => Date.parse(m.sent_at ?? 0) || 0;
+  return rows.map((r) => ({ ...r, messages: (by.get(r.email) ?? []).sort((a, b) => at(a) - at(b)) }));
+}
+
 // Outreach: one creator's state. A video beats a reply; a waiting creator is due the one follow-up from 2 Dec (SAST).
 const FOLLOW_UP = Date.parse('2026-12-02T00:00:00+02:00');
+// A creator waiting on Georg (their message is the newest) matters most, even after a video.
 export function outreachStatus(r, now) {
+  if (r.messages?.at(-1)?.direction === 'in') return 'your_turn';
   if (r.video_url) return 'video';
   if (r.bounced_at && !r.replied_at) return 'bounced';
   if (r.replied_at) return 'replied';

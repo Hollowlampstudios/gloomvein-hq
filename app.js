@@ -1,7 +1,7 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm';
-import { SUPABASE_URL, SUPABASE_KEY } from './config.js?v=361b825a-1795643163';
-import { todayStrip, platformCards, postsTable, accountsSection, manualList, manualPosts, totalsStrip, outreachSummary, outreachCards } from './render.js?v=361b825a-1795643163';
-import { trendSnapshots, parseDuration, formatDuration, parseMultiplier, formatMultiplier, staleText } from './lib.js?v=361b825a-1795643163';
+import { SUPABASE_URL, SUPABASE_KEY } from './config.js?v=6671923c-1795786057';
+import { todayStrip, platformCards, postsTable, accountsSection, manualList, manualPosts, totalsStrip, outreachSummary, outreachCards } from './render.js?v=6671923c-1795786057';
+import { trendSnapshots, parseDuration, formatDuration, parseMultiplier, formatMultiplier, staleText, attachMessages } from './lib.js?v=6671923c-1795786057';
 
 // Implicit flow: the link works even when it is opened on a different device from the one that asked for it.
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
@@ -17,7 +17,7 @@ let outreachFilter = 'all';
 
 async function load() {
   // The view does the week maths in the database: raw snapshots would be cut at 1000 rows (about 3.5 days).
-  const [trends, posts, statuses, accounts, kofi, totals, outreach] = await Promise.all([
+  const [trends, posts, statuses, accounts, kofi, totals, outreach, messages] = await Promise.all([
     sb.from('metric_trends').select('*'),
     sb.from('posts').select('*').order('posted_at', { ascending: false, nullsFirst: false }).limit(200),
     sb.from('source_status').select('*'),
@@ -25,14 +25,15 @@ async function load() {
     sb.from('kofi').select('amount,currency,at'),
     sb.from('post_totals').select('*'),
     sb.from('outreach').select('*'),
+    sb.from('outreach_messages').select('*').order('sent_at', { ascending: true }),
   ]);
-  const failed = [trends, posts, statuses, accounts, kofi, totals, outreach].find((r) => r.error);
+  const failed = [trends, posts, statuses, accounts, kofi, totals, outreach, messages].find((r) => r.error);
   if (failed) {
     showProblem(failed.error.message);
     return;
   }
   $('problem').hidden = true;
-  data = { snapshots: trendSnapshots(trends.data), posts: posts.data, statuses: statuses.data, accounts: accounts.data, kofi: kofi.data, totals: totals.data, outreach: outreach.data };
+  data = { snapshots: trendSnapshots(trends.data), posts: posts.data, statuses: statuses.data, accounts: accounts.data, kofi: kofi.data, totals: totals.data, outreach: attachMessages(outreach.data, messages.data) };
   render();
 }
 
